@@ -7,6 +7,7 @@ segmentation_model_path = "models/segmentation_model"
 demand_model_path = "models/logistic_regression_model"
 
 [segmentation]
+n_record = 8000
 features = ["age", "service_count"]
 download_filename = "segmentation_results.csv"
 tab_name = "Segmentation"
@@ -29,6 +30,7 @@ service_count_max = 10
 last_service_days_back = 365
 
 [demand]
+n_record = 12000
 features = ["age", "sessions_completed"]
 download_filename = "demand_prediction_results.csv"
 tab_name = "Demand Prediction"
@@ -49,9 +51,8 @@ sessions_completed_max = 5
 sessions_needed_extra_max = 5
 registration_days_back = 365
 
-[raw_data]
-tab_name = "View Raw Data"
-
+# [raw_data]
+# tab_name = "View Raw Data"
 [app]
 title = "CommunityCare Client Data Modelling"
 page_title = "CommunityCare Data Modelling"

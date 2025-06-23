@@ -128,8 +128,8 @@ def write_encrypted_parquet(df: pd.DataFrame, out_path: str, parquet_key: str):
 
 
 def main() -> None:
-    clients = generate_clients()
-    services = generate_services()
+    clients = generate_clients(seg_conf["n_record"])
+    services = generate_services(demand_conf["n_record"])
     Path(ds["client_data_path"]).parent.mkdir(parents=True, exist_ok=True)
     Path(ds["service_data_path"]).parent.mkdir(parents=True, exist_ok=True)
     parquet_key = get_parquet_key()
