@@ -1,0 +1,55 @@
+[data_sources]
+client_data_path = "data/clients.csv"
+service_data_path = "data/services.csv"
+segmentation_model_path = "models/segmentation_model"
+demand_model_path = "models/logistic_regression_model"
+
+[segmentation]
+features = ["age", "service_count"]
+download_filename = "segmentation_results.csv"
+tab_name = "Segmentation"
+service_types = ["Counselling", "Housing", "Food", "Employment", "Health"]
+income_brackets = ["low", "medium", "high"]
+presenting_issues = [
+    "Mental Health",
+    "Homelessness",
+    "Unemployment",
+    "Family",
+    "Health"
+]
+genders = ["Male", "Female", "Other"]
+postcode_min = 2000
+postcode_max = 2999
+age_min = 18
+age_max = 85
+service_count_min = 1
+service_count_max = 10
+last_service_days_back = 365
+
+[demand]
+features = ["age", "sessions_completed"]
+download_filename = "demand_prediction_results.csv"
+tab_name = "Demand Prediction"
+service_types = ["Counselling", "Housing", "Food", "Employment", "Health"]
+referral_sources = ["Self", "Hospital", "Community", "Family", "Other"]
+presenting_issues = [
+    "Mental Health",
+    "Homelessness",
+    "Unemployment",
+    "Family",
+    "Health"
+]
+outcome_statuses = ["Resolved", "Ongoing", "Referred"]
+age_min = 18
+age_max = 85
+sessions_completed_min = 1
+sessions_completed_max = 5
+sessions_needed_extra_max = 5
+registration_days_back = 365
+
+[raw_data]
+tab_name = "View Raw Data"
+
+[app]
+title = "CommunityCare Client Data Modelling"
+page_title = "CommunityCare Data Modelling"
