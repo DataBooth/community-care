@@ -1,11 +1,15 @@
-from pathlib import Path
-import pandas as pd
+import os
+import random
 import tomllib
 import uuid
 from datetime import datetime, timedelta
-import random
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List
 
+import duckdb
+import pandas as pd
+
+# --- Load config ---
 with open("conf/config.toml", "rb") as f:
     CONFIG = tomllib.load(f)
 
@@ -14,11 +18,35 @@ demand_conf = CONFIG["demand"]
 ds = CONFIG["data_sources"]
 
 
+def get_parquet_key():
+    try:
+        import streamlit as st
+
+        return st.secrets["encryption"]["parquet_key"]
+    except Exception:
+        return os.environ["PARQUET_KEY"]
+
+
+def generate_friendly_client_ids(n: int) -> List[str]:
+    """Generate unique, friendly client IDs with reversed year, random increments, and short UUID."""
+    year = datetime.now().year
+    reversed_year = str(year)[::-1]
+    client_ids = []
+    seq_num = 1
+    for _ in range(n):
+        short_uuid = uuid.uuid4().hex[:6]
+        seq_str = f"{seq_num:05d}"  # zero-padded to 5 digits
+        client_id = f"CC-{reversed_year}-{seq_str}-{short_uuid}"
+        client_ids.append(client_id)
+        seq_num += random.randint(1, 9)
+    return client_ids
+
+
 def generate_clients(n: int = 1000) -> List[Dict[str, Any]]:
     """Generate synthetic client data."""
+    client_ids = generate_friendly_client_ids(n)
     clients = []
-    for _ in range(n):
-        client_id = str(uuid.uuid4())
+    for client_id in client_ids:
         age = random.randint(seg_conf["age_min"], seg_conf["age_max"])
         gender = random.choice(seg_conf["genders"])
         postcode = str(
@@ -52,9 +80,9 @@ def generate_clients(n: int = 1000) -> List[Dict[str, Any]]:
 
 def generate_services(n: int = 1000) -> List[Dict[str, Any]]:
     """Generate synthetic service demand data."""
+    client_ids = generate_friendly_client_ids(n)
     services = []
-    for _ in range(n):
-        client_id = str(uuid.uuid4())
+    for client_id in client_ids:
         service_type = random.choice(demand_conf["service_types"])
         referral_source = random.choice(demand_conf["referral_sources"])
         age = random.randint(demand_conf["age_min"], demand_conf["age_max"])
@@ -86,14 +114,32 @@ def generate_services(n: int = 1000) -> List[Dict[str, Any]]:
     return services
 
 
+def write_encrypted_parquet(df: pd.DataFrame, out_path: str, parquet_key: str):
+    con = duckdb.connect(database=":memory:")
+    con.register("tbl", df)
+    con.execute(f"PRAGMA add_parquet_key('footer_key', '{parquet_key}');")
+    con.execute(f"""
+        COPY tbl TO '{out_path}'
+        (ENCRYPTION_CONFIG {{footer_key: 'footer_key'}})
+    """)
+    con.unregister("tbl")
+    con.close()
+    print(f"Encrypted Parquet file written to {out_path}")
+
+
 def main() -> None:
     clients = generate_clients()
     services = generate_services()
     Path(ds["client_data_path"]).parent.mkdir(parents=True, exist_ok=True)
     Path(ds["service_data_path"]).parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(clients).to_csv(ds["client_data_path"], index=False)
-    pd.DataFrame(services).to_csv(ds["service_data_path"], index=False)
-    print("Data generated.")
+    parquet_key = get_parquet_key()
+    write_encrypted_parquet(pd.DataFrame(clients), ds["client_data_path"], parquet_key)
+    write_encrypted_parquet(
+        pd.DataFrame(services),
+        ds["service_data_path"],
+        parquet_key,
+    )
+    print("Data generated and encrypted.")
 
 
 if __name__ == "__main__":

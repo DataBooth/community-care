@@ -1,6 +1,8 @@
 [data_sources]
-client_data_path = "data/clients.csv"
-service_data_path = "data/services.csv"
+client_data_path = "data/clients_encrypted.parquet"
+service_data_path = "data/services_encrypted.parquet"
+clients_meta = "data/clients_meta.md"
+services_meta = "data/services_meta.md"
 segmentation_model_path = "models/segmentation_model"
 demand_model_path = "models/logistic_regression_model"
 

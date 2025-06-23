@@ -1,13 +1,15 @@
+import os
 import tomllib
 from pathlib import Path
 
+import duckdb
 import mlflow
 import pandas as pd
+from mlflow.models import infer_signature
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, silhouette_score
 from sklearn.preprocessing import StandardScaler
-from mlflow.models import infer_signature
 
 with open("conf/config.toml", "rb") as f:
     CONFIG = tomllib.load(f)
@@ -15,6 +17,26 @@ with open("conf/config.toml", "rb") as f:
 ds = CONFIG["data_sources"]
 seg_conf = CONFIG["segmentation"]
 demand_conf = CONFIG["demand"]
+
+
+def get_parquet_key():
+    try:
+        import streamlit as st
+
+        return st.secrets["encryption"]["parquet_key"]
+    except Exception:
+        return os.environ["PARQUET_KEY"]
+
+
+def load_encrypted_parquet(path, parquet_key):
+    con = duckdb.connect()
+    con.execute(f"PRAGMA add_parquet_key('footer_key', '{parquet_key}');")
+    # Use read_parquet with encryption_config
+    df = con.execute(
+        f"SELECT * FROM read_parquet('{path}', encryption_config={{'footer_key': 'footer_key'}})"
+    ).df()
+    con.close()
+    return df
 
 
 def train_segmentation(df: pd.DataFrame, n_clusters: int = 4):
@@ -76,12 +98,12 @@ def train_demand(df: pd.DataFrame):
 
 def main() -> None:
     mlflow.set_experiment("CommunityCare_Modeling")
-    df_clients = pd.read_csv(ds["client_data_path"])
-    df_services = pd.read_csv(ds["service_data_path"])
+    clients_df = load_encrypted_parquet(ds["client_data_path"], get_parquet_key())
+    services_df = load_encrypted_parquet(ds["service_data_path"], get_parquet_key())
     with mlflow.start_run(run_name="segmentation_kmeans"):
-        train_segmentation(df_clients, n_clusters=4)
+        train_segmentation(clients_df, n_clusters=4)
     with mlflow.start_run(run_name="logistic_regression_demand"):
-        train_demand(df_services)
+        train_demand(services_df)
 
 
 if __name__ == "__main__":

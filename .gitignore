@@ -3,6 +3,7 @@
 data/
 models/
 mlruns/
+.streamlit/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
