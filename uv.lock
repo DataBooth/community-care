@@ -153,6 +153,7 @@ dependencies = [
     { name = "marimo" },
     { name = "mlflow" },
     { name = "plotly" },
+    { name = "python-synthpop" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "statsmodels" },
@@ -172,6 +173,7 @@ requires-dist = [
     { name = "marimo", specifier = ">=0.14.7" },
     { name = "mlflow", specifier = ">=3.1.0" },
     { name = "plotly", specifier = ">=6.1.2" },
+    { name = "python-synthpop", specifier = ">=0.1.2" },
     { name = "scikit-learn", specifier = ">=1.7.0" },
     { name = "scipy", specifier = "<=1.11.0" },
     { name = "statsmodels", specifier = ">=0.14.4" },
@@ -204,6 +206,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ff/c0/91f1215d0d9f9f343e4773ba6c9b89e8c0cc7a64a6263f21139da639d848/contourpy-1.3.2-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:5f5964cdad279256c084b69c3f412b7801e15356b16efa9d78aa974041903da0", size = 266807, upload-time = "2025-04-15T17:45:15.535Z" },
     { url = "https://files.pythonhosted.org/packages/d4/79/6be7e90c955c0487e7712660d6cead01fa17bff98e0ea275737cc2bc8e71/contourpy-1.3.2-pp311-pypy311_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:49b65a95d642d4efa8f64ba12558fcb83407e58a2dfba9d796d77b63ccfcaff5", size = 318729, upload-time = "2025-04-15T17:45:20.166Z" },
     { url = "https://files.pythonhosted.org/packages/87/68/7f46fb537958e87427d98a4074bcde4b67a70b04900cfc5ce29bc2f556c1/contourpy-1.3.2-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:8c5acb8dddb0752bf252e01a3035b21443158910ac16a3b0d20e7fed7d534ce5", size = 221791, upload-time = "2025-04-15T17:45:24.794Z" },
+]
+
+[[package]]
+name = "copulas"
+version = "0.12.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a5/ba/f06c9468d5471272e403108fbdc7492b31828f1796c966cc04bfee72a644/copulas-0.12.3.tar.gz", hash = "sha256:1894a2a089ebed1c63c866a5614a8caeac9f89269e3f3aa3f9bf6597469ada19", size = 44980, upload-time = "2025-06-13T21:48:52.459Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/bc/e8ce3cc96dfa62243141697c7a170e029cf2f2dbdc5d634e90e25ca7f0d6/copulas-0.12.3-py3-none-any.whl", hash = "sha256:58a3363c217636968fa50b803d41a38506bfa99672a3574f650e97046531c5b2", size = 52656, upload-time = "2025-06-13T21:48:51.408Z" },
 ]
 
 [[package]]
@@ -1141,6 +1158,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
+]
+
+[[package]]
+name = "python-synthpop"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "copulas" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/9c/5e50de75200c7787fcda0985a08ec500f56ac1562418b92d9b4e208689c9/python_synthpop-0.1.2.tar.gz", hash = "sha256:2bf39a3e80a9ea73a721b661b3dba86af49031c3034174b7ed856cada9d19504", size = 612580, upload-time = "2025-05-25T10:39:24.768Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/93/7f90be134b58e1efb92461d709ebad78d13b366fc1ee458d401c9cbd7f17/python_synthpop-0.1.2-py3-none-any.whl", hash = "sha256:83a52a01cb06937e1d9cc3a09cceb015e3d7eaf65a739b1a1e240c24fa0b1692", size = 558130, upload-time = "2025-05-25T10:39:22.913Z" },
 ]
 
 [[package]]

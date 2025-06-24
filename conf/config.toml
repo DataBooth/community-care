@@ -56,3 +56,20 @@ registration_days_back = 365
 [app]
 title = "CommunityCare Client Data Modelling"
 page_title = "CommunityCare Data Modelling"
+
+[synthetic_pop_params]
+n_samples = 1000
+random_state = 42
+# Marginal distributions as comma-separated values
+gender_labels = "Female,Male"
+gender_probs = "0.9,0.1"
+age_group_labels = "55-64,65-79,80+"
+age_group_probs = "0.1,0.8,0.1"
+indigenous_labels = "Indigenous,Non-indigenous"
+indigenous_probs = "0.09,0.91"
+marital_labels = "Never married,Separated,Divorced,Widowed,Married"
+marital_probs = "0.27,0.13,0.31,0.28,0.01"
+housing_labels = "Private rental,Insecure,Other"
+housing_probs = "0.36,0.25,0.39"
+duckdb_path = "data/communitycare_synth.db"
+duckdb_table = "synthetic_clients"
