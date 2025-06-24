@@ -4,6 +4,7 @@ data/
 models/
 mlruns/
 .streamlit/
+*/__marimo__/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
