@@ -1,13 +1,48 @@
 import tomllib
 from pathlib import Path
+
 import duckdb
 import mlflow.sklearn
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 
-import plotly.express as px
-import pandas as pd
+def show_cluster_spider_plot(df, features, clusters, cluster_col="segment"):
+    """
+    Display a radar (spider) plot showing normalized feature means for each cluster.
+    """
+    df = df.copy()
+    df[cluster_col] = clusters
+    means = df.groupby(cluster_col)[features].mean().reset_index()
+    # Min-max scale each feature for visualization
+    means_scaled = means.copy()
+    for feature in features:
+        min_val = means[feature].min()
+        max_val = means[feature].max()
+        if max_val > min_val:
+            means_scaled[feature] = (means[feature] - min_val) / (max_val - min_val)
+        else:
+            means_scaled[feature] = 0.5  # If constant, set to mid-point
+
+    # print(f"Cluster Feature Means (scaled):\n {means_scaled}")
+    # print(features)
+
+    melted = means_scaled.melt(
+        id_vars=cluster_col, var_name="Feature", value_name="Scaled Mean"
+    )
+    fig = px.line_polar(
+        melted,
+        r="Scaled Mean",
+        theta="Feature",
+        color=cluster_col,
+        line_close=True,
+        markers=True,
+        title="Cluster Profiles (Spider Plot, Scaled)",
+    )
+    fig.update_traces(fill="toself")
+    # st.subheader("Cluster Profiles (Spider Plot, Scaled)")
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def show_cluster_size_bubbles(
@@ -47,6 +82,30 @@ def show_cluster_size_bubbles(
         height=350,
     )
     return fig
+
+
+def show_cluster_profiles(df, features, clusters, cluster_col="segment"):
+    """Display cluster profiles as a summary table and bar chart."""
+    df = df.copy()
+    df[cluster_col] = clusters
+
+    # Compute means for numeric features
+    means = df.groupby(cluster_col)[features].mean().reset_index()
+    st.subheader("Cluster Feature Means")
+    st.dataframe(means)
+    print(f"Cluster Feature Means:\n {means}")
+
+    # Melt for plotting
+    melted = means.melt(id_vars=cluster_col, var_name="Feature", value_name="Mean")
+    fig = px.bar(
+        melted,
+        x="Feature",
+        y="Mean",
+        color=cluster_col,
+        barmode="group",
+        title="Feature Means by Cluster",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # --- Configuration Loader ---
@@ -162,54 +221,86 @@ class CommunityCareApp:
     def segmentation_tab(self, tab):
         with tab:
             st.header(self.config.seg_conf["tab_name"])
-            seg_model_path = Path(self.config.ds["segmentation_model_path"])
-            client_data_path = Path(self.config.ds["client_data_path"])
-            seg_features = self.config.seg_conf["features"]
 
-            if not seg_model_path.exists():
+            available_ks = [2, 3, 4, 5, 6]
+            selected_k = st.selectbox(
+                "Select number of clusters (k):", available_ks, index=2
+            )
+
+            model_path = Path(self.config.ds["segmentation_model_path"]).with_name(
+                f"segmentation_model_k{selected_k}.pkl"
+            )
+            client_data_path = Path(self.config.ds["client_data_path"])
+            categorical_features = self.config.seg_conf["categorical_features"]
+            numeric_features = self.config.seg_conf["numeric_features"]
+
+            if not model_path.exists():
                 st.error(
-                    "Segmentation model not found. Please train and save the model first."
+                    f"Segmentation model for k={selected_k} not found at: {model_path}"
                 )
                 return
+
             if not client_data_path.exists():
                 st.error(f"Client data file not found at: {client_data_path}")
                 return
 
             # Load model, data, and scaler
-            kmeans = mlflow.sklearn.load_model(str(seg_model_path))
+            kmeans = mlflow.sklearn.load_model(str(model_path))
             df_clients = self.loader.load(client_data_path)
-            scaler = ScalerUtility.fit_scaler(df_clients, seg_features)
+            scaler = ScalerUtility.fit_scaler(df_clients, numeric_features)
+
+            # --- Prepare features for clustering ---
+            # One-hot encode categoricals
+            X = pd.get_dummies(
+                df_clients[numeric_features + categorical_features], drop_first=True
+            )
+            # Save the columns used for one-hot encoding (should match training)
+            fit_columns = X.columns.tolist()
+
+            # Scale numeric features
+            X[numeric_features] = scaler.transform(X[numeric_features])
 
             # --- Predict Segment for a Single Client (Manual Entry) ---
-            st.subheader("Predict Segment for a Client")
-            with st.form(key="segmentation_form"):
-                age = st.number_input(
-                    "Age",
-                    min_value=self.config.seg_conf["age_min"],
-                    max_value=self.config.seg_conf["age_max"],
-                    value=30,
-                )
-                service_count = st.number_input(
-                    "Service Count",
-                    min_value=self.config.seg_conf["service_count_min"],
-                    max_value=self.config.seg_conf["service_count_max"],
-                    value=3,
-                )
-                seg_submit = st.form_submit_button("Predict Segment")
-                if seg_submit:
-                    input_df = pd.DataFrame(
-                        [[age, service_count]], columns=seg_features
+        st.subheader("Predict Segment for a Client")
+        with st.form(key="segmentation_form"):
+            cols = st.columns(2)
+            input_dict = {}
+
+            # Numeric fields in first column, categorical in second (or alternate as needed)
+            for i, num_feat in enumerate(numeric_features):
+                with cols[i % 2]:
+                    input_dict[num_feat] = st.number_input(
+                        num_feat.capitalize(),
+                        min_value=float(df_clients[num_feat].min()),
+                        max_value=float(df_clients[num_feat].max()),
+                        value=float(df_clients[num_feat].mean()),
                     )
-                    X_scaled = scaler.transform(input_df)
-                    cluster = kmeans.predict(X_scaled)[0]
-                    st.success(f"Predicted client segment: {cluster}")
+            for i, cat_feat in enumerate(categorical_features):
+                with cols[i % 2]:
+                    input_dict[cat_feat] = st.selectbox(
+                        cat_feat.capitalize(),
+                        df_clients[cat_feat].unique(),
+                    )
+            seg_submit = st.form_submit_button("Predict Segment")
+
+            if seg_submit:
+                input_df = pd.DataFrame([input_dict])
+                # One-hot encode and align columns
+                X_input = pd.get_dummies(input_df, drop_first=True)
+                for col in fit_columns:
+                    if col not in X_input.columns:
+                        X_input[col] = 0
+                X_input = X_input[fit_columns]
+                # Scale numeric features
+                X_input[numeric_features] = scaler.transform(X_input[numeric_features])
+                cluster = kmeans.predict(X_input)[0]
+                st.success(f"Predicted client segment: {cluster}")
 
             st.divider()
 
             # --- Display Cluster Sizes as Plotly Bubble Chart ---
             st.subheader("Segment Distribution")
-            # Calculate cluster sizes from the data
-            clusters = kmeans.predict(scaler.transform(df_clients[seg_features]))
+            clusters = kmeans.predict(X)
             cluster_sizes = (
                 pd.Series(clusters)
                 .value_counts()
@@ -219,6 +310,9 @@ class CommunityCareApp:
             )
             fig = show_cluster_size_bubbles(cluster_sizes)
             st.plotly_chart(fig, use_container_width=True)
+
+            show_cluster_profiles(X, X.columns, clusters)
+            show_cluster_spider_plot(X, X.columns, clusters)
 
     def demand_tab(self, tab):
         with tab:

@@ -8,7 +8,13 @@ demand_model_path = "models/logistic_regression_model"
 
 [segmentation]
 n_record = 8000
-features = ["age", "service_count"]
+numeric_features = ["age", "service_count"]
+categorical_features = [
+    "gender",
+    "income_bracket",
+    "service_type",
+    "presenting_issue"
+]
 download_filename = "segmentation_results.csv"
 tab_name = "Segmentation"
 service_types = ["Counselling", "Housing", "Food", "Employment", "Health"]
