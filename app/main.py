@@ -8,41 +8,41 @@ import plotly.express as px
 import streamlit as st
 
 
-def show_cluster_spider_plot(df, features, clusters, cluster_col="segment"):
-    """
-    Display a radar (spider) plot showing normalized feature means for each cluster.
-    """
-    df = df.copy()
-    df[cluster_col] = clusters
-    means = df.groupby(cluster_col)[features].mean().reset_index()
-    # Min-max scale each feature for visualization
-    means_scaled = means.copy()
-    for feature in features:
-        min_val = means[feature].min()
-        max_val = means[feature].max()
-        if max_val > min_val:
-            means_scaled[feature] = (means[feature] - min_val) / (max_val - min_val)
-        else:
-            means_scaled[feature] = 0.5  # If constant, set to mid-point
+import plotly.graph_objects as go
 
-    # print(f"Cluster Feature Means (scaled):\n {means_scaled}")
-    # print(features)
 
-    melted = means_scaled.melt(
-        id_vars=cluster_col, var_name="Feature", value_name="Scaled Mean"
-    )
-    fig = px.line_polar(
-        melted,
-        r="Scaled Mean",
-        theta="Feature",
-        color=cluster_col,
-        line_close=True,
-        markers=True,
+def show_cluster_spider_plot(X_scaled, X_actual, features, clusters):
+    """
+    X_scaled: DataFrame of scaled means per cluster (for plotting)
+    X_actual: DataFrame of actual means per cluster (for hover text)
+    features: list of feature names (axes)
+    clusters: list or array of cluster labels
+    """
+    features_closed = features + [features[0]]  # close the loop
+    fig = go.Figure()
+
+    for i, row in X_scaled.iterrows():
+        r = [row[feat] for feat in features] + [row[features[0]]]
+        # Build hover text with actual means
+        hovertext = [f"{feat}: {X_actual.loc[i, feat]:.2f}" for feat in features]
+        hovertext.append(f"{features[0]}: {X_actual.loc[i, features[0]]:.2f}")
+        fig.add_trace(
+            go.Scatterpolar(
+                r=r,
+                theta=features_closed,
+                fill="toself",
+                name=f"Cluster {int(row['segment'])}",
+                hoverinfo="text",
+                hovertext="<br>".join(hovertext),  # show all features on hover
+            )
+        )
+
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+        showlegend=True,
         title="Cluster Profiles (Spider Plot, Scaled)",
     )
-    fig.update_traces(fill="toself")
-    # st.subheader("Cluster Profiles (Spider Plot, Scaled)")
-    st.plotly_chart(fig, use_container_width=True)
+    return fig
 
 
 def show_cluster_size_bubbles(
@@ -92,8 +92,8 @@ def show_cluster_profiles(df, features, clusters, cluster_col="segment"):
     # Compute means for numeric features
     means = df.groupby(cluster_col)[features].mean().reset_index()
     st.subheader("Cluster Feature Means")
-    st.dataframe(means)
-    print(f"Cluster Feature Means:\n {means}")
+    st.dataframe(means, hide_index=True)
+    print(f"Cluster Features:\n {means.columns}")
 
     # Melt for plotting
     melted = means.melt(id_vars=cluster_col, var_name="Feature", value_name="Mean")
@@ -311,8 +311,26 @@ class CommunityCareApp:
             fig = show_cluster_size_bubbles(cluster_sizes)
             st.plotly_chart(fig, use_container_width=True)
 
-            show_cluster_profiles(X, X.columns, clusters)
-            show_cluster_spider_plot(X, X.columns, clusters)
+            clusters = kmeans.predict(X)
+            X_with_segment = X.copy()
+            X_with_segment["segment"] = clusters
+
+            # For cluster profiles (means of one-hot encoded features)
+            show_cluster_profiles(X_with_segment, X.columns, clusters)
+
+            # For spider plot: compute means for both scaled and actual
+            X_scaled = X.copy()
+            X_scaled[numeric_features] = scaler.transform(X_scaled[numeric_features])
+            X_scaled["segment"] = clusters
+
+            means_actual = X_with_segment.groupby("segment").mean().reset_index()
+            means_scaled = X_scaled.groupby("segment").mean().reset_index()
+            spider_features = [col for col in X.columns if col != "segment"]
+
+            fig = show_cluster_spider_plot(
+                means_scaled, means_actual, spider_features, means_scaled["segment"]
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
     def demand_tab(self, tab):
         with tab:

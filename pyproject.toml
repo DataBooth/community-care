@@ -17,6 +17,10 @@ dependencies = [
     "watchdog>=6.0.0",
     "scipy<=1.11.0",
     "python-synthpop>=0.1.2",
+    "formulaic>=1.1.1",
+    "faker>=37.4.0",
+    "loguru>=0.7.3",
+    "tqdm>=4.67.1",
 ]
 
 [project.scripts]

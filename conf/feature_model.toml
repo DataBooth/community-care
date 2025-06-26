@@ -1,0 +1,25 @@
+[features]
+candidate = [
+    "age",
+    "service_count",
+    "gender",
+    "income_bracket",
+    "service_type",
+    "presenting_issue",
+]
+target = "y"
+always_include = []
+always_exclude = []
+poly_feature = "service_count"
+poly_degrees = [1, 2]
+max_features = 3
+
+[model]
+task = "regression"
+model_types = ["linear", "rf"]
+scoring = ["neg_root_mean_squared_error", "r2"]
+cv = 2
+
+[mlflow]
+experiment_name = "formulaic_feature_model_selector"
+tracking_uri = "http://localhost:5000" # or your MLflow server URI
